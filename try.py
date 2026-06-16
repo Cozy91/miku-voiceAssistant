@@ -3,6 +3,7 @@ import psutil
 import sounddevice as sd
 import soundfile as sf
 from faster_whisper import WhisperModel
+import webbrowser
 
 model = WhisperModel(
     "small",
@@ -14,6 +15,13 @@ apps = [
     'spotify', 'dolphin', 'sober',
     'libreoffice', 'retroarch'
 ]
+
+sites = {
+    "youtube": "https://youtube.com",
+    "github": "https://github.com",
+    "reddit": "https://reddit.com",
+    "chatgpt": "https://chatgpt.com"
+}
 
 while True:
 
@@ -76,3 +84,13 @@ while True:
 
                 print(f"closed {app}")
                 break
+    elif command.startwith("search "):
+        query=command.replace("search ","")
+
+        webbrowser.open(
+                f"https://www.google.com/search?q={query}"
+                )
+        
+        print(f"searched for {query}")
+     
+
