@@ -1,18 +1,12 @@
 import subprocess
 import psutil
-import webbrowser
+import sounddevice as sd
+import soundfile as sf
 from faster_whisper import WhisperModel
 
-model_size = "small"
-
 model = WhisperModel(
-    model_size,
+    "small",
     device="cpu"
-)
-
-segments, info = model.transcribe(
-    "/home/cozy/test.wav",
-    beam_size=3
 )
 
 apps = [
@@ -21,46 +15,64 @@ apps = [
     'libreoffice', 'retroarch'
 ]
 
-command = ""
+while True:
 
-for segment in segments:
-    command += segment.text + " "
+    duration = 5
+    samplerate = 44100
 
-command = command.lower().strip()
+    print("Listening...")
 
-print(f"command: {command}")
+    audio = sd.rec(
+        int(duration * samplerate), # ITS CALCULATING TOTAL SAMPLES TAKEN OVER 5 SECS, SAAMPLE RATE IS AMOUNT OF SAMPLES TAKEN IN ONE SECOJD
+        samplerate=samplerate,
+        channels=1,
+        dtype='float32'
+    )
 
+    sd.wait()
 
-if command.startswith("open "):
+    sf.write("test.wav", audio, samplerate)
 
-    for app in apps:
-        if app in command:
-            subprocess.Popen([app])
-            print(f"opened {app}")
+    print("Processing...")
 
-            if app == "firefox":
-                search = input("what do you want to search: ")
+    segments, info = model.transcribe(
+        "test.wav",
+        beam_size=3 # how strongly the model tries to find the correct text from audio 
+    )
 
-                url = f"https://www.google.com/search?q={search}"
+    command = ""
 
-                subprocess.Popen([
-                    "firefox",
-                    url
-                ])
+    for segment in segments:
+        command += segment.text + " "
 
-            break
+    command = command.lower().strip()
 
+    print(f"command: {command}")
 
-elif command.startswith("close "):
+    if "exit" in command:
+        break
 
-    for app in apps:
-        if app in command:
+    if command.startswith("open "):
 
-            for proc in psutil.process_iter(['pid', 'name']):
-                name = proc.info['name']
+        for app in apps:
+            if app in command:
 
-                if name and app in name.lower():
-                    proc.kill()
+                subprocess.Popen([app])
+                print(f"opened {app}")
 
-            print(f"closed {app}")
-            break
+                break
+
+    elif command.startswith("close "):
+
+        for app in apps:
+            if app in command:
+
+                for proc in psutil.process_iter(['pid', 'name']):
+
+                    name = proc.info['name']
+
+                    if name and app in name.lower():
+                        proc.kill()
+
+                print(f"closed {app}")
+                break
