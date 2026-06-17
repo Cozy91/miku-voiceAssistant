@@ -4,6 +4,7 @@ import sounddevice as sd
 import soundfile as sf
 from faster_whisper import WhisperModel
 import webbrowser
+import ollama
 
 model = WhisperModel(
     "small",
@@ -15,13 +16,6 @@ apps = [
     'spotify', 'dolphin', 'sober',
     'libreoffice', 'retroarch'
 ]
-
-sites = {
-    "youtube": "https://youtube.com",
-    "github": "https://github.com",
-    "reddit": "https://reddit.com",
-    "chatgpt": "https://chatgpt.com"
-}
 
 while True:
 
@@ -57,6 +51,33 @@ while True:
 
     print(f"command: {command}")
 
+    responce=ollama.chat( # initializing ollama
+             model='qwen3:4b', # llm used, 4 billion parametres
+             messages=[
+                 {
+                     'role':'system',
+                     'content':'''
+                     you convert speech into commands
+                     valid commands:
+                     open APP 
+                     close APP 
+                     search QUERY 
+                     return only the command
+                     '''
+                     },
+                 {
+                     'role':'user',
+                     'content':command
+                     }
+                 ],
+              options={
+                  "num_predict":20 #stop after 20 tokens
+                  }
+                         
+            )
+    command=responce['message']['content'].lower().strip()
+    print(f"llm :{command}")                                            
+
     if "exit" in command:
         break
 
@@ -84,13 +105,12 @@ while True:
 
                 print(f"closed {app}")
                 break
-    elif command.startwith("search "):
+    elif command.startswith("search "):
         query=command.replace("search ","")
 
         webbrowser.open(
                 f"https://www.google.com/search?q={query}"
                 )
         
-        print(f"searched for {query}")
-     
-
+        print(f"searched for {query}")  
+        
